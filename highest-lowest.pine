@@ -1,0 +1,49 @@
+//@version=5  
+indicator("highest/lowest", overlay=true)  
+lb = input.int(36)
+
+type min_max
+    string sr_type
+    int bar_id
+    int bar_time
+    float pp
+    line ln
+var array<min_max> mm = array.new<min_max>()
+
+highest = ta.highest(lb)
+lowest = ta.lowest(lb)
+
+method get_mm(array<min_max> obj, id = 0) => 
+    result = min_max.new()
+    if(obj.size() > id)
+        result := obj.get(id)
+    result
+
+method set_mm(array<min_max> obj, min_max obj_rec, id = 0) => 
+    line.set_xy1(obj_rec.ln, obj_rec.bar_id, obj_rec.pp)
+    line.set_xy2(obj_rec.ln, obj_rec.bar_id + 20, obj_rec.pp)
+    obj.set(id, obj_rec)
+
+method add_mm(array<min_max> obj, min_max obj_rec) => 
+    obj_rec.ln := line.new(obj_rec.bar_id, obj_rec.pp, obj_rec.bar_id + 20, obj_rec.pp, 
+         color = obj_rec.sr_type == 'H' ? color.red : color.green)
+    obj.unshift(obj_rec)
+
+if(highest == high)
+    hi_rec = mm.get_mm()
+    if(hi_rec.sr_type == 'H')
+        hi_rec.bar_id := bar_index
+        hi_rec.bar_time := time
+        hi_rec.pp := high
+        mm.set_mm(hi_rec)
+    else
+        mm.add_mm(min_max.new('H', bar_index, time, high))
+if(lowest == low)
+    lo_rec = mm.get_mm()
+    if(lo_rec.sr_type == 'L')
+        lo_rec.bar_id := bar_index
+        lo_rec.bar_time := time
+        lo_rec.pp := low
+        mm.set_mm(lo_rec)
+    else
+        mm.add_mm(min_max.new('L', bar_index, time, low))
